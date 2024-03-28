@@ -137,3 +137,13 @@ dmypy.json
 .vscode
 
 _build/
+presentation/talktemplate.aux
+presentation/talktemplate.bbl
+presentation/talktemplate.blg
+presentation/talktemplate.fdb_latexmk
+presentation/talktemplate.fls
+presentation/talktemplate.nav
+presentation/talktemplate.out
+presentation/talktemplate.snm
+presentation/talktemplate.synctex.gz
+presentation/talktemplate.toc
