@@ -18,6 +18,17 @@ class HelloMessage(GenericMessage):
             sequencenumber=-1, 
             payload=None
         ):
+        """
+        Represents a Hello message in the OLSR protocol.
+
+        Args:
+            message_from (int): The identifier of the sender.
+            message_to (int): The identifier of the receiver.
+            nexthop (float, optional): The next hop for the message. Defaults to float('inf').
+            interfaceid (float, optional): The interface ID. Defaults to float('inf').
+            sequencenumber (int, optional): The sequence number of the message. Defaults to -1.
+            payload (Any, optional): The payload of the message. Defaults to None.
+        """
         header = GenericMessageHeader(
             OLSREventTypes.HELLO,
             message_from,
@@ -38,6 +49,17 @@ class TCMessage(GenericMessage):
             interfaceid=float('inf'), 
             sequencenumber=-1, 
         ):
+        """
+        Represents a TC (Topology Control) message in the OLSR protocol.
+
+        Args:
+            message_from (int): The identifier of the sender.
+            message_to (int): The identifier of the receiver.
+            payload (Any): The payload of the message.
+            nexthop (float, optional): The next hop for the message. Defaults to float('inf').
+            interfaceid (float, optional): The interface ID. Defaults to float('inf').
+            sequencenumber (int, optional): The sequence number of the message. Defaults to -1.
+        """
         header = GenericMessageHeader(
             OLSREventTypes.TC,
             message_from,
@@ -50,6 +72,13 @@ class TCMessage(GenericMessage):
 
 class OLSRComponent(GenericModel):
     def __init__(self, *args, **kwargs):
+        """
+        Represents an OLSR component.
+
+        Args:
+            *args: Variable length arguments.
+            **kwargs: Arbitrary keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.eventhandlers[OLSREventTypes.HELLO] = self.on_hello
         self.eventhandlers[OLSREventTypes.TC] = self.on_tc
@@ -61,6 +90,9 @@ class OLSRComponent(GenericModel):
         self.topology = {}
 
     def send_hello(self):
+        """
+        Sends a Hello message to the link layer broadcast address.
+        """
         hello_message = HelloMessage(
             message_from=self.componentinstancenumber,
             message_to=MessageDestinationIdentifiers.LINKLAYERBROADCAST,
@@ -69,6 +101,9 @@ class OLSRComponent(GenericModel):
         self.send_down(Event(self, OLSREventTypes.HELLO, hello_message))
 
     def send_tc(self):
+        """
+        Sends a TC (Topology Control) message to the network layer broadcast address.
+        """
         tc_message = TCMessage(
             message_from=self.componentinstancenumber,
             message_to=MessageDestinationIdentifiers.NETWORKLAYERBROADCAST,
@@ -78,6 +113,12 @@ class OLSRComponent(GenericModel):
         self.send_down(Event(self, OLSREventTypes.TC, tc_message))
 
     def on_hello(self, eventobj: Event):
+        """
+        Handles the reception of a Hello message.
+
+        Args:
+            eventobj (Event): The event object containing the Hello message.
+        """
         hello_message = eventobj.eventcontent
         self.neighbor_set.add(hello_message.header.messagefrom)
         self.routing_table[hello_message.header.messagefrom] = {
@@ -86,6 +127,12 @@ class OLSRComponent(GenericModel):
         }
 
     def on_tc(self, eventobj: Event):
+        """
+        Handles the reception of a TC (Topology Control) message.
+
+        Args:
+            eventobj (Event): The event object containing the TC message.
+        """
         tc_message = eventobj.eventcontent
         mpr_selectors = tc_message.payload['mpr_selectors']
         self.topology[tc_message.header.messagefrom] = {
@@ -93,6 +140,12 @@ class OLSRComponent(GenericModel):
         }
 
     def select_mpr(self):
+        """
+        Selects the MPR (Multi-Point Relay) nodes based on the two-hop neighbor information.
+
+        Returns:
+            set: The set of selected MPR nodes.
+        """
         two_hop_neighbors = set()
         for neighbor in self.neighbor_set:
             for neighbor_neighbor in self.topology[neighbor]['mpr_selectors']:
@@ -109,6 +162,9 @@ class OLSRComponent(GenericModel):
         return mpr_set
     
     def calculate_routing_table(self):
+        """
+        Calculates the routing table based on the current topology information.
+        """
         for node in self.topology:
             self.routing_table[node] = {
                 "nexthop": None,
