@@ -2,7 +2,6 @@ from enum import Enum
 from adhoccomputing.Experimentation.Topology import Event
 from adhoccomputing.GenericModel import GenericMessage, GenericModel, GenericMessageHeader
 from adhoccomputing.Generics import Event, AHCTimer, MessageDestinationIdentifiers
-import networkx as nx
 
 class OLSREventTypes(Enum):
     HELLO = "hello"
@@ -73,11 +72,11 @@ class TCMessage(GenericMessage):
 class OLSRComponent(GenericModel):
     def __init__(self, *args, **kwargs):
         """
-        Represents an OLSR component.
+        Represents an OLSR component(node).
 
         Args:
-            *args: Variable length arguments.
-            **kwargs: Arbitrary keyword arguments.
+            *args: Variable length arguments for GenericModel arguments passthrough.
+            **kwargs: Keyword arguments for GenericModel arguments passthrough.
         """
         super().__init__(*args, **kwargs)
         self.eventhandlers[OLSREventTypes.HELLO] = self.on_hello
