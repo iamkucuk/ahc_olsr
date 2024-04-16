@@ -1,7 +1,7 @@
-﻿Snapshot.Snapshot
-=================
+﻿OLSR.OLSR
+=========
 
-.. automodule:: Snapshot.Snapshot
+.. automodule:: OLSR.OLSR
 
    
    
@@ -17,13 +17,16 @@
 
    .. autosummary::
    
-   .. autoclass:: SnapshotComponentModel
+   .. autoclass:: HelloMessage
       :members:
       :undoc-members:
-   .. autoclass:: SnapshotEventTypes
+   .. autoclass:: OLSRComponent
       :members:
       :undoc-members:
-   .. autoclass:: SnapshotMessageTypes
+   .. autoclass:: OLSREventTypes
+      :members:
+      :undoc-members:
+   .. autoclass:: TCMessage
       :members:
       :undoc-members:
    
