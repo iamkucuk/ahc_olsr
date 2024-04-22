@@ -118,10 +118,9 @@ class OLSRComponent(GenericModel):
         Args:
             eventobj (Event): The event object containing the Hello message.
         """
-        hello_message = eventobj.eventcontent
-        self.neighbor_set.add(hello_message.header.messagefrom)
-        self.routing_table[hello_message.header.messagefrom] = {
-            "nexthop": hello_message.header.messagefrom,
+        self.neighbor_set.add(eventobj.eventsource_componentinstancenumber)
+        self.topology[eventobj.eventsource_componentinstancenumber] = {
+            "nexthop": eventobj.eventsource_componentinstancenumber,
             "distance": 1
         }
 
@@ -199,6 +198,29 @@ class OLSRComponent(GenericModel):
     #         return None
         
     #     return nx.shortest_path(graph, self.componentinstancenumber, destination)
+
+if __name__ == '__main__':
+    from adhoccomputing.Experimentation.Topology import Topology
+    from adhoccomputing.Generics import setAHCLogLevel, DEBUG
+    from adhoccomputing.Networking.LogicalChannels.GenericChannel import GenericChannel
+    import time
+
+    setAHCLogLevel(DEBUG)
+
+    topo = Topology()
+    topo.construct_sender_receiver(OLSRComponent, OLSRComponent, GenericChannel)
+    
+    topo.start()
+    time.sleep(1)
+    topo.sender.send_self(Event(topo.sender, OLSREventTypes.HELLO, None))
+    time.sleep(5)
+    topo.exit()
+
+    # olsr = OLSRComponent()
+    # olsr.send_hello()
+    # olsr.send_tc()
+    # olsr.calculate_routing_table()
+    # print(olsr.routing_table)
 
 
 
