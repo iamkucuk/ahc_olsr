@@ -1,73 +1,15 @@
-from enum import Enum
+import sys
+sys.path.insert(0, '/root/code')
+
 from adhoccomputing.Experimentation.Topology import Event
-from adhoccomputing.GenericModel import GenericMessage, GenericModel, GenericMessageHeader
-from adhoccomputing.Generics import Event, AHCTimer, MessageDestinationIdentifiers
+from adhoccomputing.GenericModel import GenericModel
+from adhoccomputing.Generics import Event, AHCTimer, MessageDestinationIdentifiers, EventTypes, logger
+from OLSR.message_types import HelloMessage, TCMessage, Message
+from OLSR.enums import OLSREventTypes, Willingness
 
-class OLSREventTypes(Enum):
-    HELLO = "hello"
-    TC = "topology_control"
+from OLSR.helpers import TopologyStateSaver
 
-class HelloMessage(GenericMessage):
-    def __init__(
-            self, 
-            message_from, 
-            message_to, 
-            nexthop=float('inf'), 
-            interfaceid=float('inf'), 
-            sequencenumber=-1, 
-            payload=None
-        ):
-        """
-        Represents a Hello message in the OLSR protocol.
-
-        Args:
-            message_from (int): The identifier of the sender.
-            message_to (int): The identifier of the receiver.
-            nexthop (float, optional): The next hop for the message. Defaults to float('inf').
-            interfaceid (float, optional): The interface ID. Defaults to float('inf').
-            sequencenumber (int, optional): The sequence number of the message. Defaults to -1.
-            payload (Any, optional): The payload of the message. Defaults to None.
-        """
-        header = GenericMessageHeader(
-            OLSREventTypes.HELLO,
-            message_from,
-            message_to,
-            nexthop=nexthop,
-            interfaceid=interfaceid,
-            sequencenumber=sequencenumber
-        )
-        super().__init__(header, payload=payload)
-
-class TCMessage(GenericMessage):
-    def __init__(
-            self, 
-            message_from, 
-            message_to, 
-            payload,
-            nexthop=float('inf'), 
-            interfaceid=float('inf'), 
-            sequencenumber=-1, 
-        ):
-        """
-        Represents a TC (Topology Control) message in the OLSR protocol.
-
-        Args:
-            message_from (int): The identifier of the sender.
-            message_to (int): The identifier of the receiver.
-            payload (Any): The payload of the message.
-            nexthop (float, optional): The next hop for the message. Defaults to float('inf').
-            interfaceid (float, optional): The interface ID. Defaults to float('inf').
-            sequencenumber (int, optional): The sequence number of the message. Defaults to -1.
-        """
-        header = GenericMessageHeader(
-            OLSREventTypes.TC,
-            message_from,
-            message_to,
-            nexthop=nexthop,
-            interfaceid=interfaceid,
-            sequencenumber=sequencenumber
-        )
-        super().__init__(header, payload=payload)
+state_saver = TopologyStateSaver()
 
 class OLSRComponent(GenericModel):
     def __init__(self, *args, **kwargs):
@@ -79,14 +21,105 @@ class OLSRComponent(GenericModel):
             **kwargs: Keyword arguments for GenericModel arguments passthrough.
         """
         super().__init__(*args, **kwargs)
-        self.eventhandlers[OLSREventTypes.HELLO] = self.on_hello
-        self.eventhandlers[OLSREventTypes.TC] = self.on_tc
 
         self.hello_timer = AHCTimer(2, self.send_hello)
         self.tc_timer = AHCTimer(5, self.send_tc)
 
-        self.neighbor_set = set()
-        self.topology = {}
+        self.willingness = Willingness.WILL_DEFAULT
+
+        self.neighbor_set = {}
+        self.known_topology = {}
+
+        self._selected_as_mpr = False
+        self.routing_table = {}
+
+    def set_parameters(self, hello_interval=None, tc_interval=None, willingness=None):
+        """
+        Sets the parameters for the OLSR component.
+
+        Args:
+            hello_interval (int, optional): The interval for sending Hello messages. Defaults to None.
+            tc_interval (int, optional): The interval for sending TC messages. Defaults to None.
+            willingness (Willingness, optional): The willingness of the node. Defaults to None.
+        """
+        if hello_interval:
+            self.hello_timer.interval = hello_interval
+        if tc_interval:
+            self.tc_timer.interval = tc_interval
+        if willingness:
+            self.willingness = willingness
+
+    @property
+    def selected_as_mpr(self):
+        return self._selected_as_mpr
+    
+    @selected_as_mpr.setter
+    def selected_as_mpr(self, value):
+        if value != self._selected_as_mpr:
+            self._selected_as_mpr = value
+            state_saver.save_state(self.topology)
+
+    def on_init(self, eventobj: Event):
+        """
+        This method is called when the object is initialized.
+
+        Parameters:
+        - eventobj: An instance of the Event class.
+
+        Returns:
+        - None
+        """
+        self.hello_timer.start()
+        self.tc_timer.start()
+    
+    def on_message_from_bottom(self, eventobj: Event):
+        """
+        Handles incoming messages from the bottom layer.
+
+        Args:
+            eventobj (Event): The event object containing the message.
+
+        Returns:
+            None
+        """
+        if eventobj.eventcontent.header.messagetype == OLSREventTypes.HELLO:
+            self.on_hello(eventobj)
+        elif eventobj.eventcontent.header.messagetype == OLSREventTypes.TC:
+            self.on_tc(eventobj)
+
+    def consume(self, eventobj: Event):
+        """
+        A placeholder method for consuming incoming data packets.
+        """
+        pass
+
+    def on_message_from_top(self, eventobj: Event):
+        """
+        Handles incoming data packets from the upper layer and forwards them according to the routing table.
+
+        Args:
+            eventobj (Event): The event object containing the data packet.
+        """
+        data_packet = eventobj.eventcontent
+        destination = data_packet.header.messageto
+
+        if destination == self.componentinstancenumber:
+            # If the current node is the destination, consume it somehow
+            self.consume(eventobj)
+        else:
+            # Forward the packet to the next hop according to the routing table
+            if destination in self.routing_table:
+                next_hop = self.routing_table[destination]
+                forwarded_packet = Message(
+                    message_from=data_packet.header.messagefrom,
+                    message_to=destination,
+                    payload=data_packet.payload,
+                    nexthop=next_hop
+                )
+                self.send_down(Event(self, EventTypes.MFRT, forwarded_packet))
+            else:
+                # If no route is found, drop the packet (or implement error handling as needed)
+                logger.error(f"No route found for destination {destination}. Dropping packet.")
 
     def send_hello(self):
         """
@@ -95,21 +128,23 @@ class OLSRComponent(GenericModel):
         hello_message = HelloMessage(
             message_from=self.componentinstancenumber,
             message_to=MessageDestinationIdentifiers.LINKLAYERBROADCAST,
-            payload=self.neighbor_set,
+            payload={
+                'neighbors': set(self.neighbor_set.keys()),
+                'willingness': self.willingness,
+            },
         )
-        self.send_down(Event(self, OLSREventTypes.HELLO, hello_message))
+        self.send_down(Event(self, EventTypes.MFRT, hello_message))
 
     def send_tc(self):
         """
-        Sends a TC (Topology Control) message to the network layer broadcast address.
+        Sends a TC (Topology Control) message to the link layer broadcast address.
         """
         tc_message = TCMessage(
             message_from=self.componentinstancenumber,
-            message_to=MessageDestinationIdentifiers.NETWORKLAYERBROADCAST,
-            payload=self.select_mpr(),
-            nexthop=MessageDestinationIdentifiers.LINKLAYERBROADCAST
+            payload={'mpr_selectors': self.select_mpr()},
+            message_to=MessageDestinationIdentifiers.LINKLAYERBROADCAST
         )
-        self.send_down(Event(self, OLSREventTypes.TC, tc_message))
+        self.send_down(Event(self, EventTypes.MFRT, tc_message))
 
     def on_hello(self, eventobj: Event):
         """
@@ -117,112 +152,155 @@ class OLSRComponent(GenericModel):
 
         Args:
             eventobj (Event): The event object containing the Hello message.
+
+        Returns:
+            None
         """
-        self.neighbor_set.add(eventobj.eventsource_componentinstancenumber)
-        self.topology[eventobj.eventsource_componentinstancenumber] = {
+        self.neighbor_set[eventobj.eventsource_componentinstancenumber] = {
+            "neighbors": eventobj.eventcontent.payload['neighbors'],
+            "willingness": eventobj.eventcontent.payload['willingness']
+        } #eventobj.eventcontent.payload['neighbors']
+        self.known_topology[eventobj.eventsource_componentinstancenumber] = {
             "nexthop": eventobj.eventsource_componentinstancenumber,
             "distance": 1
         }
 
     def on_tc(self, eventobj: Event):
         """
-        Handles the reception of a TC (Topology Control) message.
+        Handle the TC event.
 
         Args:
             eventobj (Event): The event object containing the TC message.
+
+        Returns:
+            None
         """
         tc_message = eventobj.eventcontent
         mpr_selectors = tc_message.payload['mpr_selectors']
-        self.topology[tc_message.header.messagefrom] = {
+        if tc_message.header.messagefrom not in self.known_topology:
+            self.known_topology[tc_message.header.messagefrom] = {}
+        self.known_topology[tc_message.header.messagefrom].update({
             "mpr_selectors": mpr_selectors
-        }
+        })
+
+        if self.componentinstancenumber in mpr_selectors:
+            self.selected_as_mpr = True
+            self.send_down(Event(self, EventTypes.MFRT, tc_message))
+
+        self.calculate_routing_table()
 
     def select_mpr(self):
         """
-        Selects the MPR (Multi-Point Relay) nodes based on the two-hop neighbor information.
+        Selects the Multi-Point Relays (MPRs) based on the OLSR protocol.
 
         Returns:
-            set: The set of selected MPR nodes.
-        """
-        two_hop_neighbors = set()
-        for neighbor in self.neighbor_set:
-            for neighbor_neighbor in self.topology[neighbor]['mpr_selectors']:
-                two_hop_neighbors.add(neighbor_neighbor)
-        
-        two_hop_neighbors.discard(self.componentinstancenumber)
+            set: A set of selected MPRs.
 
+        Algorithm:
+            1. Create a dictionary to keep track of which one-hop neighbors cover which two-hop neighbors.
+            2. While there are still two-hop neighbors that are not covered:
+                a. Find the neighbors with the maximum number of unique uncovered two-hop neighbors.
+                b. Select the candidate with the highest willingness.
+                c. Update the set of covered two-hop neighbors.
+                d. Remove covered two-hop neighbors from all sets in the coverage map.
+            3. Return the set of selected MPRs.
+        """
+        covered_two_hop_neighbors = set()
         mpr_set = set()
-        while two_hop_neighbors:
-            best_neighbor = max(self.neighbor_set, key=lambda x: len(two_hop_neighbors.intersection(self.topology[x]['mpr_selectors'])))
-            mpr_set.add(best_neighbor)
-            two_hop_neighbors.difference_update(self.topology[best_neighbor]['mpr_selectors'])
+
+        # Create a dictionary to keep track of which one-hop neighbors cover which two-hop neighbors
+        coverage_map = {}
+        for one_hop_neighbor, neighbor_data in self.neighbor_set.items():
+            two_hop_set = set(neighbor_data['neighbors']) - {self.componentinstancenumber} - set(self.neighbor_set.keys())
+            coverage_map[one_hop_neighbor] = {
+                'two_hop_set': two_hop_set,
+                'willingness': neighbor_data['willingness']
+            }
+
+        # While there are still two-hop neighbors that are not covered
+        while any(data['two_hop_set'] for data in coverage_map.values()):
+            # Find the neighbors with the maximum number of unique uncovered two-hop neighbors
+            max_uncovered_count = max(len(data['two_hop_set'] - covered_two_hop_neighbors) for data in coverage_map.values())
+            candidates = [neighbor for neighbor, data in coverage_map.items() if len(data['two_hop_set'] - covered_two_hop_neighbors) == max_uncovered_count]
+
+            # Select the candidate with the highest willingness
+            mpr_candidate = max(candidates, key=lambda x: coverage_map[x]['willingness'].value)
+            mpr_set.add(mpr_candidate)
+
+            # Update the set of covered two-hop neighbors
+            covered_two_hop_neighbors.update(coverage_map[mpr_candidate]['two_hop_set'])
+
+            # Remove covered two-hop neighbors from all sets in the coverage map
+            for neighbor_data in coverage_map.values():
+                neighbor_data['two_hop_set'].difference_update(covered_two_hop_neighbors)
 
         return mpr_set
-    
+
+
+
+
     def calculate_routing_table(self):
         """
-        Calculates the routing table based on the current topology information.
+        Calculates the routing table based on the known topology.
+
+        This method creates a graph from the known topology and calculates the shortest paths from the current node to all other nodes.
+        It then updates the routing table with the next hop for each destination.
+
+        Returns:
+            None
         """
-        for node in self.topology:
-            self.routing_table[node] = {
-                "nexthop": None,
-                "distance": float('inf')
-            }
-        
-        self.routing_table[self.componentinstancenumber] = {
-            "nexthop": self.componentinstancenumber,
-            "distance": 0
-        }
+        # Create a new graph from the topology
+        G = nx.Graph()
 
-        for neighbor in self.neighbor_set:
-            self.routing_table[neighbor] = {
-                "nexthop": neighbor,
-                "distance": 1
-            }
+        # Add edges for each node in the topology
+        for node, node_data in self.known_topology.items():
+            if 'nexthop' in node_data:
+                G.add_edge(self.componentinstancenumber, node, weight=node_data['distance'])
 
-        for node in self.topology:
-            for neighbor in self.topology[node]['mpr_selectors']:
-                if self.routing_table[node]['distance'] + 1 < self.routing_table[neighbor]['distance']:
-                    self.routing_table[neighbor] = {
-                        "nexthop": node,
-                        "distance": self.routing_table[node]['distance'] + 1
-                    }
-    
-    # def get_shortest_path(self, destination):
-    #     graph = nx.Graph()
-    #     for node in self.topology:
-    #         for neighbor in self.topology[node]['mpr_selectors']:
-    #             graph.add_edge(node, neighbor)
+            if 'mpr_selectors' in node_data:
+                for mpr_selector in node_data['mpr_selectors']:
+                    G.add_edge(node, mpr_selector, weight=1)
 
-    #     if not nx.has_path(graph, self.componentinstancenumber, destination):
-    #         return None
-        
-    #     return nx.shortest_path(graph, self.componentinstancenumber, destination)
+        # Calculate the shortest paths from the current node to all other nodes
+        shortest_paths = nx.single_source_dijkstra_path(G, self.componentinstancenumber)
+
+        # Update the routing table with the next hop for each destination
+        self.routing_table = {}
+        for dest, path in shortest_paths.items():
+            if dest != self.componentinstancenumber and len(path) > 1:
+                self.routing_table[dest] = path[1]
+
+
 
 if __name__ == '__main__':
-    from adhoccomputing.Experimentation.Topology import Topology
-    from adhoccomputing.Generics import setAHCLogLevel, DEBUG
+    from adhoccomputing.Generics import setAHCLogLevel, DEBUG, logger
     from adhoccomputing.Networking.LogicalChannels.GenericChannel import GenericChannel
+    import networkx as nx
     import time
+    from adhoccomputing.Experimentation.Topology import Topology
+    import os
+    from helpers import plot_topology
+
+    # Remove plots folder if it exists
+    if os.path.exists("plots"):
+        import shutil
+        shutil.rmtree("plots")
 
     setAHCLogLevel(DEBUG)
-
-    topo = Topology()
-    topo.construct_sender_receiver(OLSRComponent, OLSRComponent, GenericChannel)
     
+    topo = Topology()
+
+    G = nx.random_geometric_graph(20, 0.4)
+
+    topo.construct_from_graph(G, OLSRComponent, GenericChannel)
+    plot_topology(topo)
+
+    logger.warning("Up and ready.")
+
     topo.start()
-    time.sleep(1)
-    topo.sender.send_self(Event(topo.sender, OLSREventTypes.HELLO, None))
-    time.sleep(5)
+
+    time.sleep(15)
+    
     topo.exit()
 
-    # olsr = OLSRComponent()
-    # olsr.send_hello()
-    # olsr.send_tc()
-    # olsr.calculate_routing_table()
-    # print(olsr.routing_table)
-
-
-
-
-
+    state_saver.produce_gif()
