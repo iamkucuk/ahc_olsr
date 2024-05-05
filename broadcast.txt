@@ -1,0 +1,6 @@
+Number of nodes, Number of messages Broadcast, Number of messages OLSR
+10, 135, 50
+20, 1234, 150
+30, 4460, 299
+40, 11082, 501
+50, 17784, 971

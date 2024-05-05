@@ -1,4 +1,4 @@
-from adhoccomputing.GenericModel import GenericMessage, GenericModel, GenericMessageHeader
+from adhoccomputing.GenericModel import GenericMessage, GenericMessageHeader
 
 from OLSR.enums import OLSREventTypes
 

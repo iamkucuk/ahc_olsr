@@ -16,10 +16,11 @@ Key Features of OLSR:
 
 **Partial-Route Sets:** Nodes only propagate partial information about their neighbors, reducing the size of link state updates.
 
-**Message Types:** OLSR defines two types of messages:
+**Message Types:** OLSR defines two (and a half) types of messages:
 
 - **Hello messages:** Used for neighbor discovery and maintenance. Nodes periodically broadcast Hello messages to their one-hop neighbors.
 - **Topology Control (TC) messages:** Used for distributing link state information. Nodes send TC messages containing partial-route sets to their MPRs.
+- **Multiple Interface Declaration (MID) messages:** Used to declare the presence of multiple interfaces and map addresses to interfaces. That message type was not implemented as the AHC framework does not support multiple interfaces. Also, this message type is not descriptive for the OLSR algorithm and is not necessary for the understanding of the algorithm.
 
 **Routing Table Computation:** Nodes compute their routing tables based on the received link state information, using the Shortest Path First (SPF) algorithm or a similar method.
    
@@ -34,6 +35,7 @@ Key Features of OLSR:
         dict RoutingTable;
         int SequenceNumber;
         bool CurrentNodeIsMPR;
+        int Willingness;
 
         Procedure InitializeOLSRForNode
         NeighborTable ← empty;
@@ -58,7 +60,7 @@ Key Features of OLSR:
         end while
 
         Procedure SendHelloMessage
-        Message HelloMsg ← new(Type: "Hello", Neighbors: keys(NeighborTable));
+        Message HelloMsg ← new(Type: "Hello", Neighbors: keys(NeighborTable), Willingness: Willingness);
         Perform Broadcast(HelloMsg) to all immediate neighbors;
 
         Procedure SendTCMessage
@@ -74,7 +76,7 @@ Key Features of OLSR:
         end if
 
         Procedure ProcessHelloMessage(Message HelloMsg)
-        Update NeighborTable with HelloMsg.Sender and HelloMsg.Neighbors;
+        Update NeighborTable with HelloMsg.Sender, HelloMsg.Neighbors and HelloMsg.Willingness;
         Perform UpdateMPRSet;
 
         Procedure ProcessTCMessage(Message TCMsg)
@@ -91,6 +93,7 @@ Key Features of OLSR:
 
         Procedure SelectMPRs(Dict NeighborTable)
         Set MPRCandidates ← empty;
+        Sort NeighborTable by Willingness;
         foreach Neighbor in NeighborTable do
             if Neighbor qualifies as MPR then
                 Add Neighbor to MPRCandidates;

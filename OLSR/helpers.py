@@ -6,6 +6,19 @@ import os
 from copy import deepcopy
 
 class TopologyStateSaver:
+    """
+    A class for saving and visualizing the state of a topology.
+
+    Attributes:
+        states (list): A list to store the states of the topology.
+        graphs (list): A list to store the graphs of the topology.
+
+    Methods:
+        save_state: Saves the state of the topology.
+        save_each_state: Saves each state of the topology and plots it.
+        produce_gif: Produces a GIF animation of the saved states.
+    """
+
     states = []
     graphs = []
 
@@ -13,42 +26,71 @@ class TopologyStateSaver:
         pass
 
     def save_state(self, topology):
-        # Put a thread lock here
-        # with Lock():
+        """
+        Saves the state of the topology.
+
+        Args:
+            topology: The topology object to save the state of.
+        """
         self.states.append({k: v.selected_as_mpr for k, v in topology.nodes.items()})
         self.graphs.append(deepcopy(topology.G))
 
     def save_each_state(self):
-        # Save each state using plot_topology
+        """
+        Saves each state of the topology and plots it.
+        """
         for graph, state in zip(self.graphs, self.states):
             for node, selected_as_mpr in state.items():
                 graph.nodes[node]['selected_as_mpr'] = selected_as_mpr
-            plot_topology(graph, in_thread=False)
+            if plot_topology(graph, in_thread=False):
+                break
 
     def produce_gif(self):
-        # Save each state using plot_topology
+        """
+        Produces a GIF animation of the saved states.
+        """
         try:
             from PIL import Image
         except ImportError:
             raise ImportError("You need to have the Python Imaging Library (PIL) installed to create a GIF.")
         self.save_each_state()
         images = []
-        for i in range(len(self.states)):
+        image_files = os.listdir('plots')
+        for i in range (len(image_files)):
             images.append(Image.open(f'plots/{i + 1}.png'))
         images[0].save('plots/animation.gif', save_all=True, append_images=images[1:], optimize=False, duration=500, loop=0)
             
-        
+    def reset(self):
+        """
+        Resets the states and graphs.
+        """
+        self.states = []
+        self.graphs = []
 
 def plot_topology(topology, in_thread=True):
+    """
+    Plots the given topology.
+
+    Args:
+        topology: The topology object to plot.
+        in_thread (bool): Whether to plot in a separate thread or not.
+    """
     if in_thread:
         # Create a new thread for plotting
         plot_thread = threading.Thread(target=_plot_topology, args=(topology,))
         # plot_thread.daemon = True
         plot_thread.start()
+        return False
     else:
-        _plot_topology(topology)
+        return _plot_topology(topology)
 
 def _plot_topology(topology):
+    """
+    Helper function to plot the given topology.
+
+    Args:
+        topology: The topology object to plot.
+    """
     # Create a new figure and axis
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -102,3 +144,8 @@ def _plot_topology(topology):
 
     # Save the plot with the next number
     plt.savefig(f'plots/{highest_num + 1}.png')
+
+    if all(color != 'red' for color in colors):
+        return True
+    
+    return False
