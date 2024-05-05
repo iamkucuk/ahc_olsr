@@ -66,3 +66,23 @@ PIL (Python Imaging Library) - required for creating GIF animations
 - The implementation assumes a single interface for each node.
 - The consume method in the OLSRComponent class is a placeholder for consuming incoming data packets and can be customized as needed.
 - Error handling and logging are included in the implementation for debugging and monitoring purposes.
+
+#### Some Results
+
+Here's how the implementation performs for various experiments:
+
+1. Here's how OLSR converges:
+
+![Topology Plot](topo_plot.gif)
+
+2. Number of repetitions for broadcasting
+
+The OLSR implementation significantly reduces the number of repetitions for broadcasting compared to basic broadcasting. Here are the results for various experiments:
+
+These results demonstrate the effectiveness of OLSR in reducing broadcast overhead and improving efficiency in mobile ad hoc networks.
+
+![Comparison](comparison.png)
+
+3. Here's how the algorithm reacts to some disturbance to the connections:
+
+![Adaptance Plot](mobile.gif)
