@@ -46,6 +46,8 @@ Figure 2 illustrates the convergence process of the OLSR algorithm. In the anima
 
 Link to Figure 2: https://s12.gifyu.com/images/SaIb0.gif
 
+The timesteps of the animation is not actually time steps, but the flooding of the topology control message. By its nature, the OLSR algorithm converges at only one Topology Control flood. This is because the MPR selection process ensures that every node has a set of MPRs that cover all two-hop neighbors. This property is crucial for minimizing the overhead associated with broadcasting messages in the network. In some occasions, the algorithm may converge in two Topology Control floods, but this is rare and depends on the network topology, and the arbitrary changes that happens within the concurrences. 
+
 Broadcast Message Repetition
 ----------------------------
 

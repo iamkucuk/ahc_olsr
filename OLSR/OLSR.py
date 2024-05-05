@@ -1,4 +1,5 @@
 # import sys
+
 # sys.path.insert(0, '/root/code')
 
 from adhoccomputing.Experimentation.Topology import Event
@@ -6,7 +7,10 @@ from adhoccomputing.GenericModel import GenericModel
 from adhoccomputing.Generics import Event, AHCTimer, MessageDestinationIdentifiers, EventTypes, logger
 from OLSR.message_types import HelloMessage, TCMessage, Message
 from OLSR.enums import OLSREventTypes, Willingness
+from OLSR.helpers import TopologyStateSaver
 import networkx as nx
+
+state_saver = TopologyStateSaver()
 
 class OLSRComponent(GenericModel):
     def __init__(self, *args, **kwargs):
@@ -30,6 +34,8 @@ class OLSRComponent(GenericModel):
         self._selected_as_mpr = False
         self.routing_table = {}
 
+        self.tc_counter = 1
+
     def set_parameters(self, hello_interval=None, tc_interval=None, willingness=None):
         """
         Sets the parameters for the OLSR component.
@@ -46,6 +52,9 @@ class OLSRComponent(GenericModel):
         if willingness:
             self.willingness = willingness
 
+    def increase_tc_counter(self):
+        self.tc_counter += 1
+
     @property
     def selected_as_mpr(self):
         return self._selected_as_mpr
@@ -55,7 +64,8 @@ class OLSRComponent(GenericModel):
         if value != self._selected_as_mpr:
             self._selected_as_mpr = value
             if value:
-                state_saver.save_state(self.topology)
+                state_saver.save_state(self.topology, self.tc_counter)
+                
 
     def on_init(self, eventobj: Event):
         """
@@ -145,10 +155,12 @@ class OLSRComponent(GenericModel):
         """
         Sends a TC (Topology Control) message to the link layer broadcast address.
         """
+        self.increase_tc_counter()
         tc_message = TCMessage(
             message_from=self.componentinstancenumber,
             payload={'mpr_selectors': self.select_mpr()},
-            message_to=MessageDestinationIdentifiers.LINKLAYERBROADCAST
+            message_to=MessageDestinationIdentifiers.LINKLAYERBROADCAST,
+            sequencenumber=self.tc_counter
         )
         self.send_down(Event(self, EventTypes.MFRT, tc_message))
 
@@ -295,17 +307,18 @@ def main(number_of_nodes):
     plot_topology(topo)
 
     logger.warning("Up and ready.")
-
     topo.start()
 
     time.sleep(15)
     
     topo.exit()
+    state_saver.produce_gif()
+    logger.info(f"Converged at step: {state_saver.converged_step}")
 
 
 if __name__ == '__main__':
-    from adhoccomputing.Generics import setAHCLogLevel, DEBUG
+    from adhoccomputing.Generics import setAHCLogLevel, DEBUG, INFO
 
-    setAHCLogLevel(DEBUG)
+    setAHCLogLevel(INFO)
 
     main(50)

@@ -12,6 +12,8 @@ class TopologyStateSaver:
     Attributes:
         states (list): A list to store the states of the topology.
         graphs (list): A list to store the graphs of the topology.
+        steps (list): A list to store the steps of the topology.
+        converged_step (int): The step at which the topology converged.
 
     Methods:
         save_state: Saves the state of the topology.
@@ -21,27 +23,32 @@ class TopologyStateSaver:
 
     states = []
     graphs = []
+    steps = []
+    converged_step = 0
 
     def __init__(self) -> None:
         pass
 
-    def save_state(self, topology):
+    def save_state(self, topology, step=None):
         """
         Saves the state of the topology.
 
         Args:
             topology: The topology object to save the state of.
+            step (int): The step at which the topology is saved.
         """
         self.states.append({k: v.selected_as_mpr for k, v in topology.nodes.items()})
         self.graphs.append(deepcopy(topology.G))
+        self.steps.append(step)
 
     def save_each_state(self):
         """
-        Saves each state of the topology and plots it.
+        Saves each state of the topology and plots it. Stops when the topology converges.
         """
-        for graph, state in zip(self.graphs, self.states):
+        for graph, state, step in zip(self.graphs, self.states, self.steps):
             for node, selected_as_mpr in state.items():
                 graph.nodes[node]['selected_as_mpr'] = selected_as_mpr
+                self.converged_step = step
             if plot_topology(graph, in_thread=False):
                 break
 
@@ -62,10 +69,12 @@ class TopologyStateSaver:
             
     def reset(self):
         """
-        Resets the states and graphs.
+        Resets the states, graphs and steps of the topology.
         """
         self.states = []
         self.graphs = []
+        self.steps = []
+        self.converged_step = 0
 
 def plot_topology(topology, in_thread=True):
     """
