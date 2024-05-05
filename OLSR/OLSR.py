@@ -1,15 +1,12 @@
-import sys
-sys.path.insert(0, '/root/code')
+# import sys
+# sys.path.insert(0, '/root/code')
 
 from adhoccomputing.Experimentation.Topology import Event
 from adhoccomputing.GenericModel import GenericModel
 from adhoccomputing.Generics import Event, AHCTimer, MessageDestinationIdentifiers, EventTypes, logger
 from OLSR.message_types import HelloMessage, TCMessage, Message
 from OLSR.enums import OLSREventTypes, Willingness
-
-from OLSR.helpers import TopologyStateSaver
-
-state_saver = TopologyStateSaver()
+import networkx as nx
 
 class OLSRComponent(GenericModel):
     def __init__(self, *args, **kwargs):
@@ -57,7 +54,8 @@ class OLSRComponent(GenericModel):
     def selected_as_mpr(self, value):
         if value != self._selected_as_mpr:
             self._selected_as_mpr = value
-            state_saver.save_state(self.topology)
+            if value:
+                state_saver.save_state(self.topology)
 
     def on_init(self, eventobj: Event):
         """
@@ -86,19 +84,27 @@ class OLSRComponent(GenericModel):
             self.on_hello(eventobj)
         elif eventobj.eventcontent.header.messagetype == OLSREventTypes.TC:
             self.on_tc(eventobj)
+        else:
+            self.on_else(eventobj)
 
     def consume(self, eventobj: Event):
         """
-        A placeholder method for consuming incoming data packets.
+        A placeholder method for consuming incoming data packets that are targetted for us.
         """
         pass
 
     def on_message_from_top(self, eventobj: Event):
+        pass
+
+    def on_else(self, eventobj: Event):
         """
-        Handles incoming data packets from the upper layer and forwards them according to the routing table.
+        Handles arbitrary events when the destination of a data packet is not the current node.
 
         Args:
             eventobj (Event): The event object containing the data packet.
+
+        Returns:
+            None
         """
         data_packet = eventobj.eventcontent
         destination = data_packet.header.messageto
@@ -186,6 +192,8 @@ class OLSRComponent(GenericModel):
         if self.componentinstancenumber in mpr_selectors:
             self.selected_as_mpr = True
             self.send_down(Event(self, EventTypes.MFRT, tc_message))
+        else:
+            self.selected_as_mpr = False
 
         self.calculate_routing_table()
 
@@ -236,9 +244,6 @@ class OLSRComponent(GenericModel):
 
         return mpr_set
 
-
-
-
     def calculate_routing_table(self):
         """
         Calculates the routing table based on the known topology.
@@ -270,12 +275,8 @@ class OLSRComponent(GenericModel):
             if dest != self.componentinstancenumber and len(path) > 1:
                 self.routing_table[dest] = path[1]
 
-
-
-if __name__ == '__main__':
-    from adhoccomputing.Generics import setAHCLogLevel, DEBUG, logger
+def main(number_of_nodes):
     from adhoccomputing.Networking.LogicalChannels.GenericChannel import GenericChannel
-    import networkx as nx
     import time
     from adhoccomputing.Experimentation.Topology import Topology
     import os
@@ -285,12 +286,10 @@ if __name__ == '__main__':
     if os.path.exists("plots"):
         import shutil
         shutil.rmtree("plots")
-
-    setAHCLogLevel(DEBUG)
     
     topo = Topology()
 
-    G = nx.random_geometric_graph(20, 0.4)
+    G = nx.random_geometric_graph(number_of_nodes, 0.4)
 
     topo.construct_from_graph(G, OLSRComponent, GenericChannel)
     plot_topology(topo)
@@ -303,4 +302,10 @@ if __name__ == '__main__':
     
     topo.exit()
 
-    state_saver.produce_gif()
+
+if __name__ == '__main__':
+    from adhoccomputing.Generics import setAHCLogLevel, DEBUG
+
+    setAHCLogLevel(DEBUG)
+
+    main(50)
