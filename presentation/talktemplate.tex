@@ -144,19 +144,53 @@
 The routing problem in MANETs that OLSR aims to solve involves determining the most efficient paths for data transmission between mobile nodes in a network where links frequently and unpredictably appear and disappear as nodes move.
 }
 
-\subsection{}
+\subsection{Terminology}
+\begin{frame}{Terminology}
+\begin{itemize}
+    \item MANET: Mobile ad-hoc network with self-configuring, infrastructure-less mobile devices.
+    \item MPR (Multipoint Relays): Selected nodes that reduce broadcast repetitions by relaying messages during routing.
+    \item Hello Messages: Used for neighbor discovery, sent periodically by nodes to directly connected neighbors.
+    \item TC (Topology Control) Messages: Broadcast by nodes through MPRs to disseminate link state information across the network.
+\end{itemize}
+    
+\end{frame}
 
 \subsection{Background, Previous Works}
 \begin{frame}{Background}
     \begin{itemize}
-        \item \textbf{DSR (1996, Johnson \& Maltz):} On-demand routing; higher latency compared to OLSR's constant updates.
-        \item \textbf{AODV (1999, Perkins \& Royer):} Reactive like DSR; uses routing tables, unlike OLSR's MPRs.
-        \item \textbf{DSDV (1994, Perkins \& Bhagwat):} Proactive with full-table broadcasts; OLSR reduces overhead with selective flooding.
-        \item \textbf{TORA (1997, Park \& Corson):} Adapts quickly to changes with link reversal; OLSR maintains consistent network topology knowledge.
+        \item \textbf{AODV \cite{Perkins1999}:} Reactive like DSR; uses routing tables, unlike OLSR's MPRs.
+        \item \textbf{DSDV \cite{Perkins1994}:} Proactive with full-table broadcasts; OLSR reduces overhead with selective flooding.
+        \item \textbf{TORA \cite{Park}:} Adapts quickly to changes with link reversal; OLSR maintains consistent network topology knowledge.
     \end{itemize}
 \end{frame}
 
+\begin{frame}{Comparison}
 
+\noindent \textbf{AODV (Ad-hoc On-Demand Distance Vector)}
+\begin{itemize}
+    \item \textbf{Advantage:} Efficient in managing bandwidth and battery power in mobile devices.
+    \item \textbf{Disadvantage:} High latency in route discovery.
+\end{itemize}
+
+\noindent \textbf{DSDV (Destination-Sequenced Distance-Vector)}
+\begin{itemize}
+    \item \textbf{Advantage:} Predictable performance due to regular updates.
+    \item \textbf{Disadvantage:} High overhead and slow reaction to topology changes.
+\end{itemize}
+
+\noindent \textbf{TORA (Temporally Ordered Routing Algorithm)}
+\begin{itemize}
+    \item \textbf{Advantage:} Quickly adapts to network topology changes.
+    \item \textbf{Disadvantage:} Can create loops if not managed properly.
+\end{itemize}
+
+\noindent \textbf{OLSR (Optimized Link State Routing)}
+\begin{itemize}
+    \item \textbf{Advantage:} Efficient in networks where frequent route updates are not needed.
+    \item \textbf{Disadvantage:} Overhead can be significant in large and highly dynamic networks.
+\end{itemize}
+
+\end{frame}
 
 
 \section{Contributions}
@@ -189,7 +223,6 @@ The Optimized Link State Routing (OLSR) algorithm involves the following key pro
 
 \end{frame}
 
-\subsection{Algorithm Workflow}
 \begin{frame}
     % Add image of OLSR workflow
     \begin{figure}
@@ -199,7 +232,6 @@ The Optimized Link State Routing (OLSR) algorithm involves the following key pro
     \end{figure}    
 \end{frame}
 
-\subsection{Algorithm Pseudocode}
 \begin{frame}
 \frametitle{OLSR Algorithm Pseudocode}
 
@@ -247,19 +279,181 @@ The Optimized Link State Routing (OLSR) algorithm involves the following key pro
 
 \end{frame}
 
+\begin{frame}{Step 1}
 
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr1.png}
+        \caption{OLSR Algorithm \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr2.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr3.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr4.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr5.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr6.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr7.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 1}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr8.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 2}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr9.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
+
+\begin{frame}{Step 2}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=\textwidth]{figures/olsr10.png}
+        \caption{OLSR Algorithm Continued \cite{coursera}}
+    \end{figure}    
+    
+\end{frame}
 
 \section{Experimental results/Proofs}
+
+\begin{frame}{Results outline}
+
+\begin{itemize}
+    \item (Qualitative) Convergence
+    \item (Qualitative) Mobile adaptability
+    \item (Quantitative) Comparison of Broadcasting Efficiency
+    \item (Quantitative) Comparison of Addressed Message Delivery
+\end{itemize}
+    
+\end{frame}
+
 \begin{frame}
-\frametitle{Experimental Results}
-This will be created as the project progresses.
+\frametitle{Convergence}
+
+Below link leads to a gif that shows how the algorithm converges for 50 nodes. Blue nodes are the selected MPRs, green nodes are the nodes falls within the coverage and red nodes are the nodes that are uncovered.
+
+\href{https://s12.gifyu.com/images/SaIb0.gif}{Here's the link for the gif.}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Mobile Adaptability}
+
+The mobility plot in the OLSR protocol visualization demonstrates how the algorithm dynamically adapts to changes in network topology due to node mobility.  It's been obtained by dynamically removing and adding edges to the topology.
+
+\href{https://s12.gifyu.com/images/SaIbC.gif}{Here's the link for the gif.}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Broadcasting Efficiency}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.7\textwidth]{figures/comparison.png}
+        \caption{Broadcasting Efficiency Plot}
+    \end{figure}    
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Addressed Message Delivery}
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{figures/hops.png}
+        \caption{Broadcasting Efficiency Plot}
+    \end{figure}    
+
 \end{frame}
 
 \section{Conclusions}
 \begin{frame}
-\frametitle{Conclusions}
-This will be created as the project progresses.
+\frametitle{The Good}
+\begin{itemize}
+    \item Efficient and proactive routing protocol specifically designed for mobile ad hoc networks (MANETs).
+    \item Utilizes Multi-Point Relays (MPRs) to significantly reduce the routing overhead, enhancing scalability.
+    \item Capable of adapting rapidly to dynamic network topologies, ensuring effective routing amidst frequent changes.
+    \item Near optimal performance with ultra fast convergence.
+\end{itemize}
 \end{frame}
+
+\begin{frame}{The Bad}
+
+\begin{itemize}
+    \item Stability issues: OLSR may face stability challenges due to incomplete knowledge of the entire network topology, occasionally resulting in sub-optimal routing paths.
+    \item Performance degradation: In highly mobile scenarios, the periodic updating of routes may not keep pace with rapid topological changes, potentially degrading performance.
+    \item Complexity in routing: The time complexity of MPR selection and the shortest path calculation can be high, potentially affecting performance as the network size increases.
+\end{itemize}
+    
+\end{frame}
+
+
 
 % \subsection{Main Result 1}
 % \begin{frame}
