@@ -89,22 +89,17 @@ class OLSRComponent(GenericModel):
 
         Returns:
             None
-        """
+        """        
         if eventobj.eventcontent.header.messagetype == OLSREventTypes.HELLO:
             self.on_hello(eventobj)
         elif eventobj.eventcontent.header.messagetype == OLSREventTypes.TC:
             self.on_tc(eventobj)
         else:
             self.on_else(eventobj)
-
-    def consume(self, eventobj: Event):
-        """
-        A placeholder method for consuming incoming data packets that are targetted for us.
-        """
-        pass
+        
 
     def on_message_from_top(self, eventobj: Event):
-        pass
+        logger.debug(f"{self.componentname}-{self.componentinstancenumber} RECEIVED FROM TOP {str(eventobj)}")
 
     def on_else(self, eventobj: Event):
         """
@@ -116,12 +111,13 @@ class OLSRComponent(GenericModel):
         Returns:
             None
         """
+        logger.debug(f"{self.componentname}-{self.componentinstancenumber} RECEIVED ELSE {str(eventobj)}")
         data_packet = eventobj.eventcontent
         destination = data_packet.header.messageto
 
         if destination == self.componentinstancenumber:
             # If the current node is the destination, consume it somehow
-            self.consume(eventobj)
+            self.send_up(eventobj)
         else:
             # Forward the packet to the next hop according to the routing table
             if destination in self.routing_table:
@@ -130,7 +126,8 @@ class OLSRComponent(GenericModel):
                     message_from=data_packet.header.messagefrom,
                     message_to=destination,
                     payload=data_packet.payload,
-                    nexthop=next_hop
+                    nexthop=next_hop,
+                    sequencenumber=data_packet.header.sequencenumber+1
                 )
                 self.send_down(Event(self, EventTypes.MFRT, forwarded_packet))
             else:
@@ -148,6 +145,7 @@ class OLSRComponent(GenericModel):
                 'neighbors': set(self.neighbor_set.keys()),
                 'willingness': self.willingness,
             },
+            nexthop=MessageDestinationIdentifiers.LINKLAYERBROADCAST
         )
         self.send_down(Event(self, EventTypes.MFRT, hello_message))
 
@@ -160,7 +158,8 @@ class OLSRComponent(GenericModel):
             message_from=self.componentinstancenumber,
             payload={'mpr_selectors': self.select_mpr()},
             message_to=MessageDestinationIdentifiers.LINKLAYERBROADCAST,
-            sequencenumber=self.tc_counter
+            sequencenumber=self.tc_counter,
+            nexthop=MessageDestinationIdentifiers.LINKLAYERBROADCAST
         )
         self.send_down(Event(self, EventTypes.MFRT, tc_message))
 
@@ -174,14 +173,17 @@ class OLSRComponent(GenericModel):
         Returns:
             None
         """
-        self.neighbor_set[eventobj.eventsource_componentinstancenumber] = {
+        # if event_content.messagefrom != self.componentinstancenumber:
+        self.neighbor_set[eventobj.eventcontent.header.messagefrom] = {
             "neighbors": eventobj.eventcontent.payload['neighbors'],
             "willingness": eventobj.eventcontent.payload['willingness']
         } #eventobj.eventcontent.payload['neighbors']
-        self.known_topology[eventobj.eventsource_componentinstancenumber] = {
-            "nexthop": eventobj.eventsource_componentinstancenumber,
+        self.known_topology[eventobj.eventcontent.header.messagefrom] = {
+            "nexthop": eventobj.eventcontent.header.messagefrom,
             "distance": 1
         }
+
+        logger.debug(f"{self.componentname}-{self.componentinstancenumber} RECEIVED HELLO FROM {eventobj.eventcontent.header.messagefrom} - NEIGHBORS: {eventobj.eventcontent.payload['neighbors']} - EVENT: {str(eventobj)}")
 
     def on_tc(self, eventobj: Event):
         """
@@ -200,8 +202,10 @@ class OLSRComponent(GenericModel):
         self.known_topology[tc_message.header.messagefrom].update({
             "mpr_selectors": mpr_selectors
         })
+        logger.debug(f"{self.componentname}-{self.componentinstancenumber} RECEIVED TC FROM {tc_message.header.messagefrom} - MPR SELECTOR - EVENT: {str(eventobj)}")
 
         if self.componentinstancenumber in mpr_selectors:
+            logger.info(f"{self.componentname}-{self.componentinstancenumber} SELECTED AS MPR")
             self.selected_as_mpr = True
             self.send_down(Event(self, EventTypes.MFRT, tc_message))
         else:
@@ -287,38 +291,38 @@ class OLSRComponent(GenericModel):
             if dest != self.componentinstancenumber and len(path) > 1:
                 self.routing_table[dest] = path[1]
 
-def main(number_of_nodes):
-    from adhoccomputing.Networking.LogicalChannels.GenericChannel import GenericChannel
-    import time
-    from adhoccomputing.Experimentation.Topology import Topology
-    import os
-    from helpers import plot_topology
+# def main(number_of_nodes):
+#     from adhoccomputing.Networking.LogicalChannels.GenericChannel import GenericChannel
+#     import time
+#     from adhoccomputing.Experimentation.Topology import Topology
+#     import os
+#     from helpers import plot_topology
 
-    # Remove plots folder if it exists
-    if os.path.exists("plots"):
-        import shutil
-        shutil.rmtree("plots")
+#     # Remove plots folder if it exists
+#     if os.path.exists("plots"):
+#         import shutil
+#         shutil.rmtree("plots")
     
-    topo = Topology()
+#     topo = Topology()
 
-    G = nx.random_geometric_graph(number_of_nodes, 0.4)
+#     G = nx.random_geometric_graph(number_of_nodes, 0.4)
 
-    topo.construct_from_graph(G, OLSRComponent, GenericChannel)
-    plot_topology(topo)
+#     topo.construct_from_graph(G, OLSRComponent, GenericChannel)
+#     plot_topology(topo)
 
-    logger.warning("Up and ready.")
-    topo.start()
+#     logger.warning("Up and ready.")
+#     topo.start()
 
-    time.sleep(15)
+#     time.sleep(15)
     
-    topo.exit()
-    state_saver.produce_gif()
-    logger.info(f"Converged at step: {state_saver.converged_step}")
+#     topo.exit()
+#     state_saver.produce_gif()
+#     logger.info(f"Converged at step: {state_saver.converged_step}")
 
 
-if __name__ == '__main__':
-    from adhoccomputing.Generics import setAHCLogLevel, DEBUG, INFO
+# if __name__ == '__main__':
+#     from adhoccomputing.Generics import setAHCLogLevel, DEBUG, INFO
 
-    setAHCLogLevel(INFO)
+#     setAHCLogLevel(INFO)
 
-    main(50)
+#     main(50)
