@@ -3,7 +3,7 @@
 Conclusion
 ==========
 
-The study on the Optimized Link State Routing Protocol (OLSR) for mobile ad-hoc networks (MANETs) confirms its effectiveness in reducing broadcast overhead and improving route accuracy through the innovative use of Multi-Point Relays (MPRs). The protocol's adaptability to dynamic network topologies, as demonstrated by the simulation results, aligns well with the original purpose of enhancing routing efficiency in MANETs. This makes OLSR a robust choice for future wireless LAN applications, particularly in scenarios where network density and mobility are significant factors.
+The study on the Optimized Link State Routing Protocol (OLSR) for mobile ad-hoc networks (MANETs) confirms its effectiveness in reducing broadcast overhead and improving route accuracy through the use of Multi-Point Relays (MPRs). The protocol's adaptability to dynamic network topologies, as demonstrated by the simulation results, aligns well with the original purpose of enhancing routing efficiency in MANETs. This makes OLSR a robust choice for future wireless LAN applications, particularly in scenarios where network density and mobility are significant factors.
 
 The implications of this study are particularly relevant for fields requiring reliable mobile communication, such as disaster recovery and military operations, or highly mobile topologies which requires fast convergence. The findings suggest that OLSR can significantly enhance the performance and scalability of networks in these critical areas by minimizing the routing overhead.
 

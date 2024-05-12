@@ -26,11 +26,13 @@ The OLSRComponent's calculate_routing_table method is responsible for computing 
 
 The send_hello, send_tc, on_hello and on_tc functions are managing the sending and receiving of HELLO and TC messages. The on_else function is responsible for forwarding messages to the next hop, decided by the routing table.
 
-There were 2 measurements taken in this study:
+There were 3 measurements taken in this study:
 
 **Repetitions for broadcasting:** a total of 5 broadcast messages were sent from the 0th node of the network, and the number of repetitions was counted. This provided a basic understanding of how the OLSR protocol disseminates information through the network. This is a quantitative measure of the efficiency of the protocol in terms of message dissemination.
 
 **Mobility Emulation:** the adhoccomputing framework does not inherently provide a method to model mobility. To simulate mobility, connections between arbitrary nodes were actively removed and added based on a probability factor. This allowed the OLSR algorithm to dynamically adapt to the changing network topology on the fly. This is a qualitative measure of the efficiency of the protocol in terms of adapting to changing network conditions.
+
+**Average Number of Hops to Reach Destination:** this measure was taken to understand how the OLSR algorithm affects the number of hops required to reach a destination. This is a quantitative measure of the efficiency of the protocol in terms of routing.
 
 Visualization of the OLSR protocol in action was achieved by collecting instances at each MPR selection. While the timing of the animations may not be perfectly accurate due to the potential for (near) simultaneous MPR selections, this approach still provided valuable insights into the workings of the algorithm.
 
@@ -100,10 +102,33 @@ Figure 4 demonstrates the adaptability of the OLSR algorithm to topology changes
 
 Link to Figure 4: https://s12.gifyu.com/images/SaIbC.gif
 
+Average Number of Hops to Reach Destination
+-------------------------------------------
+
+In theory, the OLSR algorithm should be adding at most 1 hops, at worst case, and should not be adding any hops at all, at the best case, to the shortest path. This is because the MPR selection process ensures that every node has a set of MPRs that cover all two-hop neighbors. This property is crucial for minimizing the overhead associated with broadcasting messages in the network. In figure 5, the average number of hops to reach the destination is calculated by the OLSR algorithm and is compared with the actual shortest path. 
+
+.. raw:: latex
+
+    \begin{figure}[H]
+    \setcounter{figure}{4}
+
+.. figure:: figures/hops.png
+     :alt: Average Number of Hops to Reach Destination
+     :align: center
+     :width: 75%
+
+     Average Number of Hops to Reach Destination
+
+.. raw:: latex
+    
+        \end{figure}
+
+This test was done by picking a random source and a destination nodes, and counting the number of hops to reach the destination. This was repeated for 1000 times, and the average number of hops was calculated. As it can be seen, the average number of hops to reach the destination is very close to the actual shortest path. This is a strong indication that the OLSR algorithm is working as expected, and is selecting the MPRs correctly.
+
 Discussion
 ~~~~~~~~~~
 
-The results obtained from this study provide valuable insights into the performance and adaptability of the OLSR algorithm in mobile ad-hoc networks. The quantitative data collected, as shown in the table and Figure 3, clearly demonstrates the significant reduction in the number of broadcast messages required by the OLSR algorithm compared to a simple broadcast. This finding supports the hypothesis that the OLSR algorithm improves network efficiency by minimizing the overhead associated with message broadcasting.
+The results obtained from this study provide valuable insights into the performance and adaptability of the OLSR algorithm in mobile ad-hoc networks. The quantitative data collected - shown in the Table, Figure 3 and Figure 5 - clearly demonstrates the significant reduction in the number of broadcast messages required by the OLSR algorithm compared to a simple broadcast. This finding supports the hypothesis that the OLSR algorithm improves network efficiency by minimizing the overhead associated with message broadcasting.
 
 The data analysis reveals that as the number of nodes in the network increases, the OLSR algorithm's performance advantage becomes more evident. This scalability is a crucial aspect of the algorithm, as it ensures that the network can grow without compromising efficiency. The quantitative nature of the data allows for a clear and measurable comparison between the two broadcasting methods, providing a strong foundation for the conclusions drawn from this study.
 
@@ -113,3 +138,4 @@ While the approach used in this study to model mobility by actively manipulating
 
 Despite these limitations, the results obtained from this study strongly support the hypothesis that the OLSR algorithm is an efficient and adaptable solution for routing in mobile ad-hoc networks. The significant reduction in broadcast messages and the algorithm's ability to quickly adjust to topology changes demonstrate its potential for improving network performance and reliability.
 
+While the algorithm's performance was a great improvement over earlier approaches for MANETs, it is important to note that the OLSR algorithm is not without its limitations. The algorithm's reliance on periodic HELLO and TC messages for topology discovery and maintenance can introduce overhead, especially in large networks with high mobility. Additionally, the MPR selection process may not always result in the optimal set of MPRs, leading to potential inefficiencies in message forwarding. Other than that, modern networks like IoT networks, and VANETs, have different requirements than the traditional MANETs, and the OLSR algorithm may not be the best choice for these networks. For example, selection of MPRs may not be the best choice for IoT networks, where energy efficiency is more important than message overhead. It's also bad for privacy, as the entire network topology is known by every node in the network.
