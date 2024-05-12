@@ -86,7 +86,7 @@ class Message(GenericMessage):
             sequencenumber (int, optional): The sequence number of the message. Defaults to -1.
         """
         header = GenericMessageHeader(
-            OLSREventTypes.TC,
+            'Generic',
             message_from,
             message_to,
             nexthop=nexthop,
