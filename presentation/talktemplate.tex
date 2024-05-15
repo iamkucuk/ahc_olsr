@@ -232,6 +232,24 @@ The Optimized Link State Routing (OLSR) algorithm involves the following key pro
     \end{figure}    
 \end{frame}
 
+\begin{frame}{Complexities}
+
+\begin{description}
+    \item[Time Complexity of MPR Selection] \hfill \\
+    \textbf{Worst Case:} $O(N^2)$, where $N$ is the number of nodes. \\
+    \textbf{Practical Scenario:} Often lower due to network sparsity and heuristic optimizations.
+
+    \item[Computational Complexity] \hfill \\
+    \textbf{Routing Calculations:} Utilizes Dijkstra’s algorithm. \\
+    \textbf{Worst Case:} $O(N \log N)$. \\
+
+    \item[Message Complexity] \hfill \\
+    \textbf{Worst Case:} $O(N^2)$, assuming each node communicates with all others. \\
+    \textbf{Reduced by MPRs:} Actual complexity is significantly lower due to selective forwarding by MPRs.
+\end{description}
+    
+\end{frame}
+
 \begin{frame}
 \frametitle{OLSR Algorithm Pseudocode}
 
@@ -395,9 +413,15 @@ The Optimized Link State Routing (OLSR) algorithm involves the following key pro
 \begin{frame}
 \frametitle{Convergence}
 
-Below link leads to a gif that shows how the algorithm converges for 50 nodes. Blue nodes are the selected MPRs, green nodes are the nodes falls within the coverage and red nodes are the nodes that are uncovered.
+Below link leads to a gif that shows how the algorithm converges for 50 nodes. Blue nodes are the selected MPRs, green nodes are the nodes that fall within the coverage, and red nodes are the nodes that are uncovered.
 
-\href{https://s12.gifyu.com/images/SaIb0.gif}{Here's the link for the gif.}
+\bigskip % Provides extra space above the link
+
+{\Large \href{https://s12.gifyu.com/images/SaIb0.gif}{\textbf{\textcolor{blue}{Click Here to View the Convergence GIF}}}}
+
+\bigskip % Provides extra space below the link
+
+The timesteps of the animation are not actual time steps, but rather the flooding of the topology control message. By its nature, the OLSR algorithm converges after just one Topology Control flood.
 
 \end{frame}
 
@@ -406,7 +430,9 @@ Below link leads to a gif that shows how the algorithm converges for 50 nodes. B
 
 The mobility plot in the OLSR protocol visualization demonstrates how the algorithm dynamically adapts to changes in network topology due to node mobility.  It's been obtained by dynamically removing and adding edges to the topology.
 
-\href{https://s12.gifyu.com/images/SaIbC.gif}{Here's the link for the gif.}
+\bigskip % Provides extra space above the link
+
+{\Large \href{https://s12.gifyu.com/images/SaIbC.gif}{\textbf{\textcolor{blue}{Click Here to View the Mobility GIF}}}}
 
 \end{frame}
 
